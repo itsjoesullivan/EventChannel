@@ -2,8 +2,8 @@
 
 */
 var EventChannel = module.exports = function() {
-  //Array to hold equivalent
-  this.durations = [];
+  //Array to hold group (also array) of durations per event.
+  this.eventDurationsArray = [];
 };
 
 EventChannel.prototype = new Array();
@@ -11,8 +11,16 @@ EventChannel.prototype = new Array();
 
 var unshift = EventChannel.prototype.unshift;
 EventChannel.prototype.unshift = function() {
-  this.durations = [];
-  unshift.apply(this,arguments);
+  
+  this.eventDurationsArray = [
+    [
+      arguments[0]
+    ]
+  ];
+  return unshift.apply(this,arguments);
+
+
+  
 };
 
 EventChannel.prototype.getClearDurations = function(ev) {
@@ -24,22 +32,114 @@ EventChannel.prototype.getClearDurations = function(ev) {
   }
 
   //Is stored
-  if(this.durations[index]) {
-    return this.durations[index];
+  if(this.eventDurationsArray[index]) {
+    return this.eventDurationsArray[index];
   }
 
-  var durations = this.durations[index] = [],
-    previousEvents = this.previousEvents(ev);
+  var eventDurations = this.eventDurationsArray[index] = [];
+    //previousEvents = this.previousEvents(ev);
 
   //If we're just getting started...
   if(index === 0) {
-    return durations.[0] = [{
+    return eventDurations[0] = [{
       start: this.start,
       end: this.end
     }];
   }
 
+
+
+  //Check previous event in case it hasn't been set yet
+  if(!this.eventDurationsArray[index-1]) {
+    this.getClearDurations(this[index-1]);
+  }
+
+  //Pretend it will all work out
+  var eventDurations = [ev];
+
+  //For each event in this channel
+  for(var i = 0; i < index; i++) {
+
+  	var comparisonEventArray = this.eventDurationsArray[i];
+
+  	comparisonEventArray.forEach(function(comparisonDuration) {
+  	  var localEventDurations = [];
+  	  eventDurations.forEach(function(eventDuration) {
+  	  	localEventDurations = localEventDurations.concat(this.getDurationsFromOnePair(eventDuration,comparisonDuration));
+  	  }.bind(this));
+  	  eventDurations = localEventDurations;
+  	}.bind(this));
+  }
   
 
+  this.eventDurationsArray[index] = eventDurations;
+  return eventDurations;
 
+};
+
+EventChannel.prototype.getDurationsFromOnePair = function(ev,ev2) {
+	var nextStart = ev.start,
+		eventDurations = [];
+		/*
+			duration:    [-------]
+			ev:            [---]
+		*/
+		if(ev2.start < nextStart && ev2.end > ev.end) {
+			eventDurations = [];
+			nextStart = false;
+			//return;
+		}
+
+		/*
+			duration:     [---]
+			ev:         [-------] 
+		*/
+		else if(ev2.start > nextStart && ev2.end < ev.end) {
+			eventDurations.push({
+				start: nextStart,
+				end: ev2.start
+			});
+
+			nextStart = ev2.end;
+		} 
+
+		/*
+			duration:    [--------]
+			ev:               [-------]
+		*/
+		else if(ev2.start < nextStart && ev2.end > nextStart && ev2.end < ev.end && nextStart < ev.end) {
+			nextStart = ev2.end;
+		}
+
+		/*
+			duration:         [-------]
+			ev:           [-------]
+		*/
+		else if(nextStart < ev2.start && ev.end > ev2.start && ev.end < ev2.end) {
+			if(nextStart !== false) {
+				eventDurations.push({
+				start: nextStart,
+				end: ev2.start
+			  });
+		      nextStart = false;
+			}
+			
+		}
+
+		/*
+			duration:  [--]
+			ev:              [--]
+		*/
+		else if(ev2.start < nextStart && ev2.end > ev.end) {
+
+		}
+
+		if(nextStart !== false && nextStart < ev.end) {
+  			eventDurations.push({
+  				start: nextStart,
+  				end: ev.end
+  			});
+  		}
+
+  		return eventDurations;
 };
