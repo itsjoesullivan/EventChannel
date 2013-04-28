@@ -1,10 +1,14 @@
 /** An object for describing overlapping events, potentially with durations, monophonically.
 
 */
-var EventChannel = module.exports = function() {
+var EventChannel = function() {
   //Array to hold group (also array) of durations per event.
   this.eventDurationsArray = [];
 };
+
+if(typeof window === 'undefined') {
+  module.exports = EventChannel;
+}
 
 EventChannel.prototype = new Array();
 
