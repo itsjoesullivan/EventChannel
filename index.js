@@ -1,10 +1,16 @@
+define(function() {
+
 /** An object for describing overlapping events, potentially with durations, monophonically.
 
 */
-var EventChannel = module.exports = function() {
+var EventChannel = function() {
   //Array to hold group (also array) of durations per event.
   this.eventDurationsArray = [];
 };
+
+if(typeof window === 'undefined') {
+  module.exports = EventChannel;
+}
 
 EventChannel.prototype = new Array();
 
@@ -51,14 +57,20 @@ EventChannel.prototype.getClearDurations = function(ev) {
 
   //Check previous event in case it hasn't been set yet
   if(!this.eventDurationsArray[index-1]) {
+    console.log('now going back to do ' + (index-1)); 
     this.getClearDurations(this[index-1]);
+    console.log(this.eventDurations);
   }
+
+
 
   //Pretend it will all work out
   var eventDurations = [ev];
 
   //For each event in this channel
   for(var i = 0; i < index; i++) {
+
+    console.log(i);
 
   	var comparisonEventArray = this.eventDurationsArray[i];
 
@@ -143,3 +155,7 @@ EventChannel.prototype.getDurationsFromOnePair = function(ev,ev2) {
 
   		return eventDurations;
 };
+
+return EventChannel;
+
+})
