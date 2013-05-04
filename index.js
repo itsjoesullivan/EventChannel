@@ -57,9 +57,7 @@ EventChannel.prototype.getClearDurations = function(ev) {
 
   //Check previous event in case it hasn't been set yet
   if(!this.eventDurationsArray[index-1]) {
-    console.log('now going back to do ' + (index-1)); 
     this.getClearDurations(this[index-1]);
-    console.log(this.eventDurations);
   }
 
 
@@ -70,17 +68,15 @@ EventChannel.prototype.getClearDurations = function(ev) {
   //For each event in this channel
   for(var i = 0; i < index; i++) {
 
-    console.log(i);
+    var comparisonEventArray = this.eventDurationsArray[i];
 
-  	var comparisonEventArray = this.eventDurationsArray[i];
-
-  	comparisonEventArray.forEach(function(comparisonDuration) {
-  	  var localEventDurations = [];
-  	  eventDurations.forEach(function(eventDuration) {
-  	  	localEventDurations = localEventDurations.concat(this.getDurationsFromOnePair(eventDuration,comparisonDuration));
-  	  }.bind(this));
-  	  eventDurations = localEventDurations;
-  	}.bind(this));
+    comparisonEventArray.forEach(function(comparisonDuration) {
+      var localEventDurations = [];
+      eventDurations.forEach(function(eventDuration) {
+        localEventDurations = localEventDurations.concat(this.getDurationsFromOnePair(eventDuration,comparisonDuration));
+      }.bind(this));
+      eventDurations = localEventDurations;
+    }.bind(this));
   }
   
 
@@ -90,70 +86,81 @@ EventChannel.prototype.getClearDurations = function(ev) {
 };
 
 EventChannel.prototype.getDurationsFromOnePair = function(ev,ev2) {
-	var nextStart = ev.start,
-		eventDurations = [];
-		/*
-			duration:    [-------]
-			ev:            [---]
-		*/
-		if(ev2.start < nextStart && ev2.end > ev.end) {
-			eventDurations = [];
-			nextStart = false;
-			//return;
-		}
+  var nextStart = ev.start,
+    eventDurations = [];
+    /*
+      duration:    [-------]
+      ev:            [---]
+    */
+    if(ev2.start < nextStart && ev2.end > ev.end) {
+      eventDurations = [];
+      nextStart = false;
+      //return;
+    }
 
-		/*
-			duration:     [---]
-			ev:         [-------] 
-		*/
-		else if(ev2.start > nextStart && ev2.end < ev.end) {
-			eventDurations.push({
-				start: nextStart,
-				end: ev2.start
-			});
 
-			nextStart = ev2.end;
-		} 
+    /*
+      duration:    [-------]
+      ev:          [---]
+    */
+    if(ev2.start === nextStart && ev2.end >= ev.end) {
+      eventDurations = [];
+      nextStart = false;
+      //return;
+    }
 
-		/*
-			duration:    [--------]
-			ev:               [-------]
-		*/
-		else if(ev2.start < nextStart && ev2.end > nextStart && ev2.end < ev.end && nextStart < ev.end) {
-			nextStart = ev2.end;
-		}
+    /*
+      duration:     [---]
+      ev:         [-------] 
+    */
+    else if(ev2.start > nextStart && ev2.end < ev.end) {
+      eventDurations.push({
+        start: nextStart,
+        end: ev2.start
+      });
 
-		/*
-			duration:         [-------]
-			ev:           [-------]
-		*/
-		else if(nextStart < ev2.start && ev.end > ev2.start && ev.end < ev2.end) {
-			if(nextStart !== false) {
-				eventDurations.push({
-				start: nextStart,
-				end: ev2.start
-			  });
-		      nextStart = false;
-			}
-			
-		}
+      nextStart = ev2.end;
+    } 
 
-		/*
-			duration:  [--]
-			ev:              [--]
-		*/
-		else if(ev2.start < nextStart && ev2.end > ev.end) {
+    /*
+      duration:    [--------]
+      ev:               [-------]
+    */
+    else if(ev2.start < nextStart && ev2.end > nextStart && ev2.end < ev.end && nextStart < ev.end) {
+      nextStart = ev2.end;
+    }
 
-		}
+    /*
+      duration:         [-------]
+      ev:           [-------]
+    */
+    else if(nextStart < ev2.start && ev.end > ev2.start && ev.end < ev2.end) {
+      if(nextStart !== false) {
+        eventDurations.push({
+        start: nextStart,
+        end: ev2.start
+        });
+          nextStart = false;
+      }
+      
+    }
 
-		if(nextStart !== false && nextStart < ev.end) {
-  			eventDurations.push({
-  				start: nextStart,
-  				end: ev.end
-  			});
-  		}
+    /*
+      duration:  [--]
+      ev:              [--]
+    */
+    else if(ev2.start < nextStart && ev2.end > ev.end) {
 
-  		return eventDurations;
+    }
+
+    if(nextStart !== false && nextStart < ev.end) {
+        eventDurations.push({
+          start: nextStart,
+          end: ev.end
+        });
+      }
+
+      return eventDurations;
 };
 
 return EventChannel;
